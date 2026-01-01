@@ -13,46 +13,31 @@ export default function Home() {
   return (
     <View style={styles.screen}>
       <View style={styles.column}>
-        <View style={styles.item}>
-          <Link href="/players" asChild>
-            <PixelButton
-              up={btnUp}
-              down={btnDown}
-              text={t("home_play")}
-              width={304}
-              height={136}
-              fontSize={48}
-              contentUp={{ top: 24, bottom: 52, left: 18, right: 18 }}
-              contentDown={{ top: 39, bottom: 33, left: 18, right: 18 }}
-            />
-          </Link>
-        </View>
+        <Link href="/players" asChild>
+          <PixelButton
+            up={btnUp}
+            down={btnDown}
+            text={t("home_play")}
+            width={304}
+            height={136}
+            fontSize={48}
+            contentUp={{ top: 24, bottom: 52, left: 18, right: 18 }}
+            contentDown={{ top: 39, bottom: 33, left: 18, right: 18 }}
+          />
+        </Link>
 
-        <View style={styles.item}>
-          <Link href="/language" asChild>
-            <PixelButton
-              up={btnUp}
-              down={btnDown}
-              text={t("home_language")}
-              width={304}
-              height={136}
-              fontSize={36}
-            />
-          </Link>
-        </View>
+        <View style={styles.spacer} />
 
-        <View>
-          <Link href="/settings" asChild>
-            <PixelButton
-              up={btnUp}
-              down={btnDown}
-              text={t("home_settings")}
-              width={304}
-              height={136}
-              fontSize={36}
-            />
-          </Link>
-        </View>
+        <Link href="/language" asChild>
+          <PixelButton
+            up={btnUp}
+            down={btnDown}
+            text={t("home_language")}
+            width={304}
+            height={136}
+            fontSize={36}
+          />
+        </Link>
       </View>
     </View>
   );
@@ -67,8 +52,9 @@ const styles = StyleSheet.create({
   },
   column: {
     alignItems: "center",
+    justifyContent: "center",
   },
-  item: {
-    marginBottom: 34, // reemplaza gap
+  spacer: {
+    height: 34, // separacion entre botones (sin dejar espacio extra al final)
   },
 });
