@@ -1,1 +1,1 @@
-export { default } from "../src/screens/names";
+import NamesScreen from "../src/screens/names/index";

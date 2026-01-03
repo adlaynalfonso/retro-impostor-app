@@ -6,9 +6,9 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import PixelButton from "../../components/PixelButton";
 import { useLanguage } from "../../i18n/LanguageProvider";
 
-import ToggleBar from "./components/ToggleBar";
-import ListPanel from "./components/ListPanel";
-import AddNameModal from "./components/AddNameModal";
+import ToggleBar from "@/screens/names/components/ToggleBar";
+import ListPanel from "@/screens/names/components/ListPanel";
+import AddNameModal from "@/screens/names/components/AddNameModal";
 
 const STORAGE_KEY = "impostor_saved_names_v1";
 
