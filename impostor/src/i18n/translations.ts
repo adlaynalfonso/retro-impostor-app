@@ -35,9 +35,9 @@ export const translations = {
     settings_title: "AJUSTES",
 
     // SETUP (jugadores / impostores)
-    setup_players: "jugadores",
-    setup_impostors: "impostores",
-    setup_next: "siguiente",
+    setup_players: "JUGADORES",
+    setup_impostors: "IMPOSTORES",
+    setup_next: "SIGUIENTE",
   },
 } as const;
 

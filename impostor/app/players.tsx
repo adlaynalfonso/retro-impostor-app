@@ -11,6 +11,7 @@ import { router } from "expo-router";
 
 import PixelButton from "../src/components/PixelButton";
 import { useLanguage } from "../src/i18n/LanguageProvider";
+import { fs } from "../src/ui/typography"; // ✅ NUEVO
 
 const MIN_PLAYERS = 3;
 const MAX_PLAYERS = 33;
@@ -33,60 +34,63 @@ const labelBoxUp = require("../assets/ui/label_box_up.png");
 const numberBoxUp = require("../assets/ui/number_box_up.png");
 
 export default function PlayersSetupScreen() {
-  const { t } = useLanguage();
-  const { width: W, height: H } = useWindowDimensions();
+  const { t, lang } = useLanguage(); // ✅ NUEVO: lang
+  const { width: W } = useWindowDimensions();
 
-  const [players, setPlayers] = useState<number>(10);
-  const [impostors, setImpostors] = useState<number>(1);
+  const [players, setPlayers] = useState(10);
+  const [impostors, setImpostors] = useState(1);
 
   const maxImpostors = useMemo(() => players, [players]);
 
-  // ---------- Layout responsive ----------
-  const contentW = Math.min(W - 44, 420);
+  // 🔧 TUS VALORES (NO LOS TOCO)
+  const SPACE_TOP = 125;
+  const SPACE_LABEL_TO_ROW = 50;
+  const SPACE_SECTION = 42;
+  const SPACE_BEFORE_NEXT = 90;
+  const SPACE_BOTTOM = 42;
 
-  // Un poco más pequeñas para que "respire"
+  // 🔧 AJUSTES FINOS
+  const ROW_GAP = 12; // separacion entre flecha - numero - flecha
+
+  // Compensa padding distinto en los PNG de flechas (para que queden simétricas)
+  const ARROW_NUDGE_LEFT = 6; // + empuja a la derecha
+  const ARROW_NUDGE_RIGHT = -14; // - empuja a la izquierda
+
+  // ✅ Centrado del texto dentro del label (sube/baja)
+  const LABEL_TEXT_NUDGE_Y = 2; // prueba 6, 8, 10
+
+  // Tamaños
+  const contentW = Math.min(W - 40, 420);
+  const arrowW = Math.round(contentW * 0.2);
+  const arrowH = Math.round(arrowW * 0.82);
+  const numberW = Math.round(contentW * 0.32);
+  const numberH = arrowH;
   const labelW = contentW;
   const labelH = Math.round(contentW * 0.22);
-
-  // Flechas más hacia el centro
-  const arrowW = Math.round(contentW * 0.20);
-  const arrowH = Math.round(arrowW * 0.82);
-
-  // Caja del número centrada y estable
-  const numberW = Math.round(contentW * 0.30);
-  const numberH = arrowH;
-
-  // “Aire”
-  const topPad = Math.round(Math.max(52, H * 0.08));
-  const sectionGap = Math.round(Math.max(22, contentW * 0.06));
-  const rowTop = 12;
-
-  // Next más abajo y un poco más pequeño
   const nextW = Math.round(contentW * 0.92);
   const nextH = Math.round(nextW * 0.42);
+  const nextFont = Math.max(30, Math.round(contentW * 0.1)); // ✅ tu valor se mantiene
 
-  // Texto del botón: evitar que se corte
-  const nextFont = Math.max(30, Math.round(contentW * 0.10));
+  // ✅ NUEVO: tamaños por idioma desde typography.ts
+  const labelFont = fs(lang, "setup_label");
+  const numberFont = fs(lang, "setup_number");
+  const nextFontByLang = fs(lang, "setup_next");
 
-  // ---------- Lógica ----------
-  const incPlayers = () => setPlayers((p) => clamp(p + 1, MIN_PLAYERS, MAX_PLAYERS));
-
+  // Lógica
+  const incPlayers = () =>
+    setPlayers((p) => clamp(p + 1, MIN_PLAYERS, MAX_PLAYERS));
   const decPlayers = () => {
     setPlayers((p) => {
-      const nextPlayers = clamp(p - 1, MIN_PLAYERS, MAX_PLAYERS);
-      setImpostors((imp) => clamp(imp, MIN_IMPOSTORS, nextPlayers));
-      return nextPlayers;
+      const np = clamp(p - 1, MIN_PLAYERS, MAX_PLAYERS);
+      setImpostors((i) => clamp(i, MIN_IMPOSTORS, np));
+      return np;
     });
   };
 
-  const incImpostors = () => setImpostors((imp) => clamp(imp + 1, MIN_IMPOSTORS, maxImpostors));
-  const decImpostors = () => setImpostors((imp) => clamp(imp - 1, MIN_IMPOSTORS, maxImpostors));
-
-  const playersLeftDisabled = players <= MIN_PLAYERS;
-  const playersRightDisabled = players >= MAX_PLAYERS;
-
-  const impostorsLeftDisabled = impostors <= MIN_IMPOSTORS;
-  const impostorsRightDisabled = impostors >= maxImpostors;
+  const incImpostors = () =>
+    setImpostors((i) => clamp(i + 1, MIN_IMPOSTORS, maxImpostors));
+  const decImpostors = () =>
+    setImpostors((i) => clamp(i - 1, MIN_IMPOSTORS, maxImpostors));
 
   const goNext = () => {
     router.push({
@@ -95,125 +99,129 @@ export default function PlayersSetupScreen() {
     });
   };
 
+  const ArrowSlot = ({
+    dir,
+    onPress,
+  }: {
+    dir: "left" | "right";
+    onPress: () => void;
+  }) => {
+    const isLeft = dir === "left";
+    const translateX = isLeft ? ARROW_NUDGE_LEFT : ARROW_NUDGE_RIGHT;
+
+    return (
+      <View style={[styles.arrowSlot, { width: arrowW, height: arrowH }]}>
+        <View style={{ transform: [{ translateX }] }}>
+          <PixelButton
+            up={isLeft ? arrowLeftUp : arrowRightUp}
+            down={isLeft ? arrowLeftDown : arrowRightDown}
+            text=""
+            width={arrowW}
+            height={arrowH}
+            onPress={onPress}
+            contentUp={{ top: 0, bottom: 0, left: 0, right: 0 }}
+            contentDown={{ top: 0, bottom: 0, left: 0, right: 0 }}
+          />
+        </View>
+      </View>
+    );
+  };
+
   return (
-    <View style={[styles.screen, { paddingTop: topPad }]}>
-      {/* JUGADORES */}
+    <View style={styles.screen}>
+      <View style={{ height: SPACE_TOP }} />
+
+      {/* PLAYERS LABEL */}
       <ImageBackground
         source={labelBoxUp}
         resizeMode="contain"
-        style={[styles.labelBox, { width: labelW, height: labelH }]}
+        style={[styles.labelBg, { width: labelW, height: labelH }]}
       >
-        <Text style={styles.labelText}>{t("setup_players")}</Text>
+        <View style={[styles.labelInner, { paddingTop: LABEL_TEXT_NUDGE_Y }]}>
+          <Text style={[styles.labelText, { fontSize: labelFont }]}>
+            {t("setup_players")}
+          </Text>
+        </View>
       </ImageBackground>
 
-      <View style={[styles.row, { width: contentW, marginTop: rowTop }]}>
-        <View style={{ width: arrowW, height: arrowH, opacity: playersLeftDisabled ? 0.55 : 1 }}>
-          <PixelButton
-            up={arrowLeftUp}
-            down={arrowLeftDown}
-            text=""
-            width={arrowW}
-            height={arrowH}
-            onPress={() => {
-              if (!playersLeftDisabled) decPlayers();
-            }}
-            contentUp={{ top: 0, bottom: 0, left: 0, right: 0 }}
-            contentDown={{ top: 0, bottom: 0, left: 0, right: 0 }}
-          />
-        </View>
+      <View style={{ height: SPACE_LABEL_TO_ROW }} />
 
-        {/* Number box centrado */}
-        <View style={{ width: numberW, height: numberH, alignItems: "center", justifyContent: "center" }}>
-          <Image source={numberBoxUp} resizeMode="contain" style={styles.absFill} />
-          <View pointerEvents="none" style={styles.numberOverlay}>
-            <Text style={styles.numberText}>{players}</Text>
+      {/* PLAYERS ROW */}
+      <View style={[styles.row, { width: contentW, gap: ROW_GAP }]}>
+        <ArrowSlot dir="left" onPress={decPlayers} />
+
+        <View style={{ width: numberW, height: numberH }}>
+          <Image
+            source={numberBoxUp}
+            resizeMode="contain"
+            style={styles.absFill}
+          />
+          <View style={styles.numberOverlay}>
+            <Text style={[styles.numberText, { fontSize: numberFont }]}>
+              {players}
+            </Text>
           </View>
         </View>
 
-        <View style={{ width: arrowW, height: arrowH, opacity: playersRightDisabled ? 0.55 : 1 }}>
-          <PixelButton
-            up={arrowRightUp}
-            down={arrowRightDown}
-            text=""
-            width={arrowW}
-            height={arrowH}
-            onPress={() => {
-              if (!playersRightDisabled) incPlayers();
-            }}
-            contentUp={{ top: 0, bottom: 0, left: 0, right: 0 }}
-            contentDown={{ top: 0, bottom: 0, left: 0, right: 0 }}
-          />
-        </View>
+        <ArrowSlot dir="right" onPress={incPlayers} />
       </View>
 
-      <View style={{ height: sectionGap }} />
+      <View style={{ height: SPACE_SECTION }} />
 
-      {/* IMPOSTORES */}
+      {/* IMPOSTORS LABEL */}
       <ImageBackground
         source={labelBoxUp}
         resizeMode="contain"
-        style={[styles.labelBox, { width: labelW, height: labelH }]}
+        style={[styles.labelBg, { width: labelW, height: labelH }]}
       >
-        <Text style={styles.labelText}>{t("setup_impostors")}</Text>
+        <View style={[styles.labelInner, { paddingTop: LABEL_TEXT_NUDGE_Y }]}>
+          <Text style={[styles.labelText, { fontSize: labelFont }]}>
+            {t("setup_impostors")}
+          </Text>
+        </View>
       </ImageBackground>
 
-      <View style={[styles.row, { width: contentW, marginTop: rowTop }]}>
-        <View style={{ width: arrowW, height: arrowH, opacity: impostorsLeftDisabled ? 0.55 : 1 }}>
-          <PixelButton
-            up={arrowLeftUp}
-            down={arrowLeftDown}
-            text=""
-            width={arrowW}
-            height={arrowH}
-            onPress={() => {
-              if (!impostorsLeftDisabled) decImpostors();
-            }}
-            contentUp={{ top: 0, bottom: 0, left: 0, right: 0 }}
-            contentDown={{ top: 0, bottom: 0, left: 0, right: 0 }}
-          />
-        </View>
+      <View style={{ height: SPACE_LABEL_TO_ROW }} />
 
-        <View style={{ width: numberW, height: numberH, alignItems: "center", justifyContent: "center" }}>
-          <Image source={numberBoxUp} resizeMode="contain" style={styles.absFill} />
-          <View pointerEvents="none" style={styles.numberOverlay}>
-            <Text style={styles.numberText}>{impostors}</Text>
+      {/* IMPOSTORS ROW */}
+      <View style={[styles.row, { width: contentW, gap: ROW_GAP }]}>
+        <ArrowSlot dir="left" onPress={decImpostors} />
+
+        <View style={{ width: numberW, height: numberH }}>
+          <Image
+            source={numberBoxUp}
+            resizeMode="contain"
+            style={styles.absFill}
+          />
+          <View style={styles.numberOverlay}>
+            <Text style={[styles.numberText, { fontSize: numberFont }]}>
+              {impostors}
+            </Text>
           </View>
         </View>
 
-        <View style={{ width: arrowW, height: arrowH, opacity: impostorsRightDisabled ? 0.55 : 1 }}>
-          <PixelButton
-            up={arrowRightUp}
-            down={arrowRightDown}
-            text=""
-            width={arrowW}
-            height={arrowH}
-            onPress={() => {
-              if (!impostorsRightDisabled) incImpostors();
-            }}
-            contentUp={{ top: 0, bottom: 0, left: 0, right: 0 }}
-            contentDown={{ top: 0, bottom: 0, left: 0, right: 0 }}
-          />
-        </View>
+        <ArrowSlot dir="right" onPress={incImpostors} />
       </View>
 
-      {/* NEXT más abajo */}
-      <View style={{ height: Math.round(sectionGap * 1.25) }} />
+      <View style={{ height: SPACE_BEFORE_NEXT }} />
 
+      {/* ✅ NEXT con animación real (pos A arriba / pos B presionado) */}
       <PixelButton
         up={nextUp}
         down={nextDown}
         text={t("setup_next")}
         width={nextW}
         height={nextH}
-        fontSize={nextFont}
+        fontSize={nextFontByLang}
+        textColor="#ffffffff" // ✅ NUEVO: color del texto NEXT
         onPress={goNext}
-        // Ajuste para que “siguiente” no se corte y quede centrado
-        contentUp={{ top: 22, bottom: 48, left: 26, right: 26 }}
-        contentDown={{ top: 36, bottom: 32, left: 26, right: 26 }}
+        // A (arriba): sube el texto un poco
+        contentUp={{ top: 38, bottom: 42, left: 26, right: 26 }}
+        // B (presionado): baja el texto (simula hundido)
+        contentDown={{ top: 58, bottom: 42, left: 26, right: 26 }}
       />
 
-      {/* aire abajo */}
-      <View style={{ height: Math.round(Math.max(26, H * 0.05)) }} />
+      <View style={{ height: SPACE_BOTTOM }} />
     </View>
   );
 }
@@ -224,44 +232,45 @@ const styles = StyleSheet.create({
     backgroundColor: "#9368A1",
     alignItems: "center",
   },
-  labelBox: {
+
+  labelBg: {
+    alignSelf: "center",
+  },
+  labelInner: {
+    flex: 1,
     alignItems: "center",
     justifyContent: "center",
   },
-  // ✅ gris oscuro (en vez de blanco)
   labelText: {
     fontFamily: "PressStart2P",
-    fontSize: 18,
-    color: "#6A6A6A",
-    includeFontPadding: false,
+    color: "#646464ff",
     textAlign: "center",
+    includeFontPadding: false,
   },
+
   row: {
     flexDirection: "row",
     alignItems: "center",
-    justifyContent: "space-between",
+    justifyContent: "center",
   },
+  arrowSlot: {
+    alignItems: "center",
+    justifyContent: "center",
+  },
+
   absFill: {
     position: "absolute",
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
+    inset: 0,
   },
   numberOverlay: {
     position: "absolute",
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
+    inset: 0,
     alignItems: "center",
     justifyContent: "center",
   },
   numberText: {
     fontFamily: "PressStart2P",
-    fontSize: 44,
-    color: "#000",
+    color: "#000000ff",
     includeFontPadding: false,
-    textAlign: "center",
   },
 });
