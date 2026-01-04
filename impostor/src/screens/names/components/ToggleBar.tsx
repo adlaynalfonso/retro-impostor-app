@@ -1,115 +1,190 @@
-import React, { useMemo, useState } from "react";
-import { Pressable, View, Image, StyleSheet, Text } from "react-native";
+import React, { useEffect, useMemo, useState } from "react";
+import { Image, Pressable, StyleSheet, View, Text } from "react-native";
 import { playClickSound } from "../../../sound/clickSound";
+
+type Side = "counter" | "memory";
+type Insets = { top: number; bottom?: number; left?: number; right?: number };
 
 type Props = {
   width: number;
   height: number;
 
-  countText: string;
-  isMemory: boolean;
+  countText: string;              // "0/10"
+  active: Side;                   // estado real (counter|memory)
+  onChange: (next: Side) => void; // cambia estado real
 
-  onPressCounter: () => void;
-  onPressMemory: () => void;
+  // ✅ CAMBIO: tamaños separados
+  countFontSize: number;          // tamaño de "0/10"
+  memoryFontSize: number;         // tamaño de "memory"
+
+  // ✅ texto traducible para "memory"
+  memoryText?: string;
+
+  /**
+   * Ajuste MANUAL de posiciones:
+   * - "Up" = cuando esa parte está levantada
+   * - "Down" = cuando esa parte está presionada
+   */
+  countUpPos?: Insets;
+  countDownPos?: Insets;
+  memoryUpPos?: Insets;
+  memoryDownPos?: Insets;
+
+  /**
+   * Ajuste de áreas clic (por si quieres afinar)
+   * leftRatio = % que ocupa el lado counter
+   */
+  leftRatio?: number; // default 0.46
+
+  // (opcional) colores por si un día quieres
+  countTextColor?: string;
+  memoryTextColor?: string;
 };
 
-// ✅ Assets
-// - counter_box_down.png: counter abajo (memory arriba)
-// - btn_memory_down.png: memory abajo (counter arriba)
-const counterDownFull = require("../../../../assets/ui/counter_box_down.png");
-const memoryDownFull = require("../../../../assets/ui/btn_memory_down.png");
+// PNGs
+const counterUp = require("../../../../assets/ui/counter_box_up.png");
+const counterDown = require("../../../../assets/ui/counter_box_down.png"); // (memory presionado)
 
 export default function ToggleBar({
   width,
   height,
   countText,
-  isMemory,
-  onPressCounter,
-  onPressMemory,
+  active,
+  onChange,
+
+  // ✅ CAMBIO
+  countFontSize,
+  memoryFontSize,
+
+  // ✅ texto
+  memoryText = "memory",
+
+  // Defaults razonables (ajústalos a tu gusto)
+  countUpPos = { left: 38, top: 28 },
+  countDownPos = { left: 38, top: 38 },
+
+  memoryUpPos = { right: 28, top: 22 },
+  memoryDownPos = { right: 28, top: 32 },
+
+  leftRatio = 0.46,
+
+  countTextColor = "#111",
+  memoryTextColor = "#111",
 }: Props) {
-  // pressedSide solo para que se vea “down” mientras estás tocando
-  const [pressedSide, setPressedSide] = useState<"counter" | "memory" | null>(null);
+  // “pressedSide” SOLO para animación instantánea
+  const [pressedSide, setPressedSide] = useState<Side | null>(null);
 
-  const displayImg = useMemo(() => {
-    if (pressedSide === "counter") return counterDownFull;
-    if (pressedSide === "memory") return memoryDownFull;
-    // estado estable
-    return isMemory ? memoryDownFull : counterDownFull;
-  }, [pressedSide, isMemory]);
+  // ✅ un solo estado visual controla PNG + textos (cero des-sync)
+  const visualActive: Side = pressedSide ?? active;
 
-  const leftW = Math.round(width * 0.42);
+  // En tu arte: counterDown = “memory presionado”
+  const showDownImage = useMemo(() => visualActive === "memory", [visualActive]);
+
+  // posiciones: si counter está presionado => count usa DOWN, memory usa UP
+  const countBox = visualActive === "counter" ? countDownPos : countUpPos;
+  const memoryBox = visualActive === "memory" ? memoryDownPos : memoryUpPos;
+
+  useEffect(() => {
+    Image.resolveAssetSource(counterUp);
+    Image.resolveAssetSource(counterDown);
+  }, []);
+
+  const leftW = width * leftRatio;
   const rightW = width - leftW;
 
   return (
     <View style={{ width, height }}>
-      <Image source={displayImg} resizeMode="stretch" style={styles.absFill} />
+      {/* PNGs superpuestos */}
+      <Image
+        source={counterUp}
+        style={[styles.img, { width, height, opacity: showDownImage ? 0 : 1 }]}
+        resizeMode="stretch"
+      />
+      <Image
+        source={counterDown}
+        style={[styles.img, { width, height, opacity: showDownImage ? 1 : 0 }]}
+        resizeMode="stretch"
+      />
 
-      {/* HITBOX IZQUIERDA (COUNTER) */}
+      {/* HITBOX izquierda (counter) */}
       <Pressable
-        style={[styles.hit, { width: leftW, height, left: 0 }]}
+        style={[styles.hit, { left: 0, width: leftW, height }]}
         onPressIn={() => {
           setPressedSide("counter");
           playClickSound();
         }}
         onPressOut={() => setPressedSide(null)}
-        onPress={() => onPressCounter()}
+        onPress={() => onChange("counter")}
       />
 
-      {/* HITBOX DERECHA (MEMORY) */}
+      {/* HITBOX derecha (memory) */}
       <Pressable
-        style={[styles.hit, { width: rightW, height, right: 0 }]}
+        style={[styles.hit, { left: leftW, width: rightW, height }]}
         onPressIn={() => {
           setPressedSide("memory");
           playClickSound();
         }}
         onPressOut={() => setPressedSide(null)}
-        onPress={() => onPressMemory()}
+        onPress={() => onChange("memory")}
       />
 
-      {/* TEXTOS ENCIMA (posicionados para tu arte) */}
-      <View pointerEvents="none" style={styles.textLayer}>
-        <View style={[styles.counterArea, { width: leftW, height }]}>
-          <Text style={styles.counterText} numberOfLines={1}>
-            {countText}
-          </Text>
-        </View>
+      {/* Texto contador (0/10) */}
+      <View
+        pointerEvents="none"
+        style={[
+          styles.textBox,
+          {
+            left: countBox.left,
+            right: countBox.right,
+            top: countBox.top,
+            bottom: countBox.bottom,
+          },
+        ]}
+      >
+        <Text
+          style={[styles.text, { fontSize: countFontSize, color: countTextColor }]}
+          numberOfLines={1}
+        >
+          {countText}
+        </Text>
+      </View>
 
-        <View style={[styles.memoryArea, { width: rightW, height }]}>
-          <Text style={styles.memoryText} numberOfLines={1}>
-            memory
-          </Text>
-        </View>
+      {/* Texto memory */}
+      <View
+        pointerEvents="none"
+        style={[
+          styles.textBox,
+          {
+            left: memoryBox.left,
+            right: memoryBox.right,
+            top: memoryBox.top,
+            bottom: memoryBox.bottom,
+          },
+        ]}
+      >
+        <Text
+          style={[styles.text, { fontSize: memoryFontSize, color: memoryTextColor }]}
+          numberOfLines={1}
+        >
+          {memoryText}
+        </Text>
       </View>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  absFill: { position: "absolute", inset: 0 },
-  hit: { position: "absolute", top: 0 },
+  img: { position: "absolute", top: 0, left: 0 },
+  hit: { position: "absolute", top: 0, backgroundColor: "transparent" },
 
-  textLayer: { position: "absolute", inset: 0, flexDirection: "row" },
-
-  counterArea: {
+  textBox: {
+    position: "absolute",
     alignItems: "center",
     justifyContent: "center",
   },
-  memoryArea: {
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  counterText: {
+  text: {
     fontFamily: "PressStart2P",
-    fontSize: 20,
-    color: "#111",
     includeFontPadding: false,
-    transform: [{ translateY: 2 }],
-  },
-  memoryText: {
-    fontFamily: "PressStart2P",
-    fontSize: 20,
-    color: "#111",
-    includeFontPadding: false,
-    transform: [{ translateY: 2 }],
+    textAlign: "center",
   },
 });

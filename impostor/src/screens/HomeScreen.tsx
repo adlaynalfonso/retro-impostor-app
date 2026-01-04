@@ -1,34 +1,34 @@
 import React from "react";
-import { View, Text, StyleSheet } from "react-native";
+import { ImageBackground, StyleSheet, useWindowDimensions } from "react-native";
 import PixelButton from "../components/PixelButton";
 
-const btnUp = require("../../assets/buttons/btn_primary_up.png");
-const btnDown = require("../../assets/buttons/btn_primary_down.png");
+const bg = require("../../assets/images/bg.png");
+const btnUp = require("../../assets/ui/btn_up.png");
+const btnDown = require("../../assets/ui/btn_down.png");
 
-type Props = {
-  onStart: () => void;
-};
+export default function HomeScreen({ onStart }: { onStart: () => void }) {
+  const { width: W } = useWindowDimensions();
 
-export default function HomeScreen({ onStart }: Props) {
+  const contentW = Math.min(W - 40, 420);
+  const btnW = Math.round(contentW * 0.92);
+  const btnH = Math.round(btnW * 0.42);
+
   return (
-    <View style={styles.container}>
-      <Text style={styles.title}>Retro Impostor</Text>
-
-      <PixelButton up={btnUp} down={btnDown} onPress={onStart} />
-    </View>
+    <ImageBackground source={bg} style={styles.container}>
+      <PixelButton
+        up={btnUp}
+        down={btnDown}
+        text=""              // ✅ obligatorio (aunque no uses texto)
+        width={btnW}         // ✅ obligatorio
+        height={btnH}        // ✅ obligatorio
+        onPress={onStart}
+        contentUp={{ top: 0, bottom: 0, left: 0, right: 0 }}
+        contentDown={{ top: 0, bottom: 0, left: 0, right: 0 }}
+      />
+    </ImageBackground>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: "#000",
-    alignItems: "center",
-    justifyContent: "center",
-    gap: 20,
-  },
-  title: {
-    color: "white",
-    fontSize: 32,
-  },
+  container: { flex: 1, alignItems: "center", justifyContent: "center" },
 });

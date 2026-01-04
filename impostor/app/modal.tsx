@@ -1,29 +1,46 @@
-import { Link } from 'expo-router';
-import { StyleSheet } from 'react-native';
-
-import { ThemedText } from '@/components/themed-text';
-import { ThemedView } from '@/components/themed-view';
+import React from "react";
+import { View, Text, StyleSheet, Pressable } from "react-native";
+import { Link } from "expo-router";
 
 export default function ModalScreen() {
   return (
-    <ThemedView style={styles.container}>
-      <ThemedText type="title">This is a modal</ThemedText>
-      <Link href="/" dismissTo style={styles.link}>
-        <ThemedText type="link">Go to home screen</ThemedText>
+    <View style={styles.container}>
+      <Text style={styles.title}>THIS IS A MODAL</Text>
+
+      <Link href="/" dismissTo asChild>
+        <Pressable style={styles.button}>
+          <Text style={styles.buttonText}>GO HOME</Text>
+        </Pressable>
       </Link>
-    </ThemedView>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
+    backgroundColor: "#000",
+    alignItems: "center",
+    justifyContent: "center",
     padding: 20,
   },
-  link: {
-    marginTop: 15,
-    paddingVertical: 15,
+  title: {
+    fontFamily: "PressStart2P",
+    fontSize: 16,
+    color: "#fff",
+    textAlign: "center",
+    marginBottom: 32,
+  },
+  button: {
+    paddingVertical: 14,
+    paddingHorizontal: 20,
+    borderWidth: 2,
+    borderColor: "#fff",
+  },
+  buttonText: {
+    fontFamily: "PressStart2P",
+    fontSize: 12,
+    color: "#fff",
+    textAlign: "center",
   },
 });

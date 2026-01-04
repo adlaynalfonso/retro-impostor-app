@@ -1,13 +1,13 @@
 import React, { useEffect, useMemo, useState } from "react";
-import { Stack } from "expo-router";
 import { View } from "react-native";
+import { Stack } from "expo-router";
 import { useFonts } from "expo-font";
 import * as SplashScreen from "expo-splash-screen";
 import { Asset } from "expo-asset";
 
 import { LanguageProvider } from "../src/i18n/LanguageProvider";
 
-// ⛔ Mantiene el splash visible hasta que TODO esté listo
+// Mantiene el splash visible hasta que TODO esté listo
 SplashScreen.preventAutoHideAsync().catch(() => {});
 
 export default function RootLayout() {
@@ -16,15 +16,16 @@ export default function RootLayout() {
   });
 
   const [assetsReady, setAssetsReady] = useState(false);
+  const [appReady, setAppReady] = useState(false);
 
-  // ✅ Assets reales que usas en HOME y LANGUAGE
+  // Assets reales que usas
   const assetsToPreload = useMemo(
     () => [
       // Botones primarios (HOME + LANGUAGE)
       require("../assets/buttons/btn_primary_up.png"),
       require("../assets/buttons/btn_primary_down.png"),
 
-      // Players screen
+      // Si estos existen, déjalos. Si no, bórralos.
       require("../assets/ui/arrow_left_up.png"),
       require("../assets/ui/arrow_left_down.png"),
       require("../assets/ui/arrow_right_up.png"),
@@ -44,18 +45,14 @@ export default function RootLayout() {
       if (!fontsLoaded) return;
 
       try {
-        // ✅ Precarga y decodifica TODO antes de mostrar pantallas
         await Promise.all(
-          assetsToPreload.map((asset) =>
-            Asset.fromModule(asset).downloadAsync()
-          )
+          assetsToPreload.map((m) => Asset.fromModule(m).downloadAsync())
         );
-      } catch {
+      } catch (e) {
         // No bloqueamos la app si falla algo
       } finally {
         if (!cancelled) {
           setAssetsReady(true);
-          SplashScreen.hideAsync().catch(() => {});
         }
       }
     }
@@ -67,8 +64,19 @@ export default function RootLayout() {
     };
   }, [fontsLoaded, assetsToPreload]);
 
-  // ⛔ No renderiza NADA hasta que fuentes + imágenes estén listas
-  if (!fontsLoaded || !assetsReady) {
+  // Cuando TODO esté listo, marcamos la app como lista
+  useEffect(() => {
+    if (fontsLoaded && assetsReady) setAppReady(true);
+  }, [fontsLoaded, assetsReady]);
+
+  // Oculta el splash exactamente cuando ya vamos a renderizar la app
+  useEffect(() => {
+    if (!appReady) return;
+    SplashScreen.hideAsync().catch(() => {});
+  }, [appReady]);
+
+  // No renderiza nada hasta que fuentes + assets estén listos
+  if (!appReady) {
     return <View style={{ flex: 1, backgroundColor: "#000" }} />;
   }
 
@@ -77,7 +85,7 @@ export default function RootLayout() {
       <Stack
         screenOptions={{
           headerShown: false,
-          animation: "none", // ✅ corte seco, sin transiciones
+          animation: "none", // corte seco retro
           contentStyle: { backgroundColor: "#000" },
         }}
       />
