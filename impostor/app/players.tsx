@@ -37,7 +37,9 @@ export default function PlayersSetupScreen() {
   const { t, lang } = useLanguage(); // ✅ NUEVO: lang
   const { width: W } = useWindowDimensions();
 
-  const [players, setPlayers] = useState(10);
+  // ✅ (1) PLAYERS ARRANCA EN 3 (NO 10)
+  const [players, setPlayers] = useState(3);
+
   const [impostors, setImpostors] = useState(1);
 
   const maxImpostors = useMemo(() => players, [players]);
@@ -58,6 +60,10 @@ export default function PlayersSetupScreen() {
 
   // ✅ Centrado del texto dentro del label (sube/baja)
   const LABEL_TEXT_NUDGE_Y = 2; // prueba 6, 8, 10
+
+  // ✅ (2) CONTROL MANUAL: BAJAR/SUBIR SOLO EL BOTÓN NEXT (IMAGEN + TEXTO)
+  // Positivo = baja, Negativo = sube
+  const NEXT_OFFSET_Y = 68; // 👈 CAMBIA ESTE NÚMERO (ej: 20, 40, 60)
 
   // Tamaños
   const contentW = Math.min(W - 40, 420);
@@ -205,21 +211,21 @@ export default function PlayersSetupScreen() {
 
       <View style={{ height: SPACE_BEFORE_NEXT }} />
 
-      {/* ✅ NEXT con animación real (pos A arriba / pos B presionado) */}
-      <PixelButton
-        up={nextUp}
-        down={nextDown}
-        text={t("setup_next")}
-        width={nextW}
-        height={nextH}
-        fontSize={nextFontByLang}
-        textColor="#ffffffff" // ✅ NUEVO: color del texto NEXT
-        onPress={goNext}
-        // A (arriba): sube el texto un poco
-        contentUp={{ top: 38, bottom: 42, left: 26, right: 26 }}
-        // B (presionado): baja el texto (simula hundido)
-        contentDown={{ top: 58, bottom: 42, left: 26, right: 26 }}
-      />
+      {/* ✅ NEXT (solo baja/sube este bloque, sin tocar lo demás) */}
+      <View style={{ transform: [{ translateY: NEXT_OFFSET_Y }] }}>
+        <PixelButton
+          up={nextUp}
+          down={nextDown}
+          text={t("setup_next")}
+          width={nextW}
+          height={nextH}
+          fontSize={nextFontByLang}
+          textColor="#ffffffff"
+          onPress={goNext}
+          contentUp={{ top: 38, bottom: 42, left: 26, right: 26 }}
+          contentDown={{ top: 58, bottom: 42, left: 26, right: 26 }}
+        />
+      </View>
 
       <View style={{ height: SPACE_BOTTOM }} />
     </View>

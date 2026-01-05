@@ -1,4 +1,13 @@
-import React, { createContext, useCallback, useContext, useMemo, useState } from "react";
+// impostor/src/i18n/LanguageProvider.tsx
+import React, {
+  createContext,
+  useCallback,
+  useContext,
+  useEffect,
+  useMemo,
+  useState,
+} from "react";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import { translations, Lang, TranslationKey } from "./translations";
 
 type Vars = Record<string, string | number>;
@@ -11,6 +20,8 @@ type LanguageContextType = {
 
 const LanguageContext = createContext<LanguageContextType | null>(null);
 
+const LANG_KEY = "impostor_lang_v1";
+
 function formatVars(text: string, vars?: Vars) {
   if (!vars) return text;
   return Object.keys(vars).reduce((acc, k) => {
@@ -19,7 +30,23 @@ function formatVars(text: string, vars?: Vars) {
 }
 
 export function LanguageProvider({ children }: { children: React.ReactNode }) {
-  const [lang, setLang] = useState<Lang>("en");
+  const [lang, _setLang] = useState<Lang>("en");
+
+  // ✅ Cargar idioma guardado al iniciar
+  useEffect(() => {
+    (async () => {
+      try {
+        const saved = await AsyncStorage.getItem(LANG_KEY);
+        if (saved === "en" || saved === "es") _setLang(saved);
+      } catch {}
+    })();
+  }, []);
+
+  // ✅ setLang que persiste
+  const setLang = useCallback((next: Lang) => {
+    _setLang(next);
+    AsyncStorage.setItem(LANG_KEY, next).catch(() => {});
+  }, []);
 
   const t = useCallback(
     (key: TranslationKey, vars?: Vars) => {
@@ -36,7 +63,7 @@ export function LanguageProvider({ children }: { children: React.ReactNode }) {
     [lang]
   );
 
-  const ctx = useMemo(() => ({ lang, setLang, t }), [lang, t]);
+  const ctx = useMemo(() => ({ lang, setLang, t }), [lang, setLang, t]);
 
   return <LanguageContext.Provider value={ctx}>{children}</LanguageContext.Provider>;
 }

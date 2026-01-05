@@ -1,0 +1,86 @@
+// impostor/app/results.tsx
+import React, { useMemo } from "react";
+import { View, Text, StyleSheet } from "react-native";
+import { router, useLocalSearchParams } from "expo-router";
+import PixelButton from "../src/components/PixelButton";
+import { useLanguage } from "../src/i18n/LanguageProvider";
+
+const homeUp = require("../assets/buttons/btn_primary_up.png");
+const homeDown = require("../assets/buttons/btn_primary_down.png");
+
+function randomBgAvoid() {
+  const banned = new Set(["#DC2D2D", "#C5B9D2"]);
+  for (let tries = 0; tries < 60; tries++) {
+    const hue = Math.floor(Math.random() * 360);
+    const saturation = 70;
+    const lightness = 40 + Math.floor(Math.random() * 15); // 40–55
+    const c = `hsl(${hue}, ${saturation}%, ${lightness}%)`;
+    // hsl nunca será blanco/negro puro, pero igual evitamos esos 2 hex que pediste.
+    if (!banned.has(c)) return c;
+  }
+  return "hsl(200, 70%, 45%)";
+}
+
+export default function ResultsPromptScreen() {
+  const { lang } = useLanguage();
+
+  const params = useLocalSearchParams<{
+    order?: string;
+    impostorIndices?: string;
+    word?: string;
+  }>();
+
+  const bg = useMemo(() => randomBgAvoid(), []);
+
+  const text =
+    lang === "es" ? "MOSTRAR RESULTADOS" : "SHOW RESULTS";
+
+  const goShow = () => {
+    router.replace({
+      pathname: "/show",
+      params: {
+        order: String(params.order ?? "[]"),
+        impostorIndices: String(params.impostorIndices ?? "[]"),
+        word: String(params.word ?? "PIZZA"),
+      },
+    });
+  };
+
+  return (
+    <View style={[styles.screen, { backgroundColor: bg }]}>
+      <Text style={styles.title}>
+        {lang === "es" ? "LISTO" : "READY"}
+      </Text>
+
+      <PixelButton
+        up={homeUp}
+        down={homeDown}
+        text={text}
+        width={304}
+        height={136}
+        fontSize={28}
+        textColor="#ffffff"
+        onPress={goShow}
+        contentUp={{ top: 24, bottom: 52, left: 18, right: 18 }}
+        contentDown={{ top: 39, bottom: 33, left: 18, right: 18 }}
+      />
+    </View>
+  );
+}
+
+const styles = StyleSheet.create({
+  screen: {
+    flex: 1,
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 28,
+    paddingHorizontal: 20,
+  },
+  title: {
+    fontFamily: "PressStart2P",
+    color: "#fff",
+    fontSize: 20,
+    includeFontPadding: false,
+    textAlign: "center",
+  },
+});

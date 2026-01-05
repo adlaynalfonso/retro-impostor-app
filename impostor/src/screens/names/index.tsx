@@ -1,3 +1,4 @@
+// impostor/src/screens/names/index.tsx
 import React, { useEffect, useState } from "react";
 import {
   View,
@@ -20,6 +21,9 @@ import { fs } from "../../ui/typography";
 
 import ToggleBar from "./components/ToggleBar";
 
+// ✅ NUEVO: palabra random por idioma
+import { getRandomWord } from "../../game/words";
+
 const STORAGE_KEY = "impostor_saved_names_v1";
 
 function clamp(n: number, min: number, max: number) {
@@ -27,6 +31,16 @@ function clamp(n: number, min: number, max: number) {
 }
 function normalizeName(s: string) {
   return s.trim().replace(/\s+/g, " ");
+}
+
+// ✅ NUEVO: pick de índices únicos (impostores sin repetir)
+function pickUniqueIndices(count: number, max: number) {
+  const indices = Array.from({ length: max }, (_, i) => i);
+  for (let i = indices.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [indices[i], indices[j]] = [indices[j], indices[i]];
+  }
+  return indices.slice(0, count);
 }
 
 // PNGs
@@ -64,21 +78,25 @@ export default function NamesScreen() {
   const [modalOpen, setModalOpen] = useState(false);
   const [newName, setNewName] = useState("");
 
-  // ✅ CONTROLES MANUALES DE LAYOUT (aquí mueves TODO sin romper)
+  // ✅ CONTROLES MANUALES DE LAYOUT
   const SPACE_TOP = 70;
+
+  // ✅ CONTROL MANUAL SOLO PARA EL CARTEL "NAMES"
+  const NAMES_BANNER_OFFSET_Y = 20; // 👈 10/20/30 baja, -10 sube
+
   const SPACE_AFTER_TITLE = 38;
 
   // ToggleBar -> AddNew
   const GAP_AFTER_TOGGLE = 18;
 
-  // “ADD NEW” se mete encima del panel como en tu mock
-  const ADDNEW_OVERLAP_ON_PANEL = 18; // 👈 sube/baja el overlap
+  // “ADD NEW” se mete encima del panel
+  const ADDNEW_OVERLAP_ON_PANEL = 18;
 
   // Panel -> Next
   const GAP_AFTER_PANEL = 18;
 
-  // Mover NEXT completo (no solo el texto)
-  const NEXT_TOP = 10; // 👈 pon 10/20/30 si quieres bajarlo
+  // Mover NEXT completo
+  const NEXT_TOP = 10;
 
   const SPACE_BOTTOM = 26;
 
@@ -88,20 +106,31 @@ export default function NamesScreen() {
   const titleW = contentW;
   const titleH = Math.round(contentW * 0.22);
 
-  // ✅ TOGGLE BAR tamaño MANUAL (lo pediste)
+  // ✅ TOGGLE BAR tamaño MANUAL
   const TOGGLE_W = contentW;
-  const TOGGLE_H = 99; // 👈 AJUSTA MANUAL
+  const TOGGLE_H = 99;
 
   const addNewW = Math.round(contentW * 0.72);
   const addNewH = Math.round(contentW * 0.18);
 
   const nextW = Math.round(contentW * 0.92);
   const nextH = Math.round(nextW * 0.42);
+
+  // ✅ Font tokens (idioma-aware)
+  const titleFont = fs(lang, "names_title");
+  const addNewFont = fs(lang, "names_addNew");
   const nextFont = fs(lang, "setup_next");
 
-  const labelFont = fs(lang, "setup_label");
-  const toggleFont = Math.max(18, Math.round(contentW * 0.075));
-  const listNameFont = Math.max(18, Math.round(contentW * 0.085));
+  const countFontSize = fs(lang, "names_counter");
+  const memoryFontSize = fs(lang, "names_memory");
+
+  const listNameFont = fs(lang, "names_list");
+  const emptyFont = fs(lang, "names_empty");
+
+  const modalTitleFont = fs(lang, "names_modal_title");
+  const modalInputFont = fs(lang, "names_modal_input");
+  const modalBtnFont = fs(lang, "names_modal_button");
+  const modalHintFont = fs(lang, "names_modal_hint");
 
   const countText = `${partyNames.length}/${totalPlayers}`;
 
@@ -169,17 +198,29 @@ export default function NamesScreen() {
     if (partyNames.length !== totalPlayers) {
       Alert.alert(
         t("names_alert_missing_title"),
-        t("names_alert_missing_body").replace("{n}", String(totalPlayers))
+        t("names_alert_missing_body", { n: totalPlayers })
       );
       return;
     }
 
+    // ✅ Orden aleatorio de jugadores (sin tocar partyNames original)
+    const order = [...partyNames].sort(() => Math.random() - 0.5);
+
+    // ✅ Impostores únicos (nunca más que players)
+    const impostorsCount = Math.max(1, Math.min(impostorsN, totalPlayers));
+    const impostorIndices = pickUniqueIndices(impostorsCount, totalPlayers);
+
+    // ✅ Palabra secreta por idioma
+    const word = getRandomWord(lang);
+
+    // ✅ Arranca el flujo del juego (pantalla de jugador + "SI SOY")
     router.push({
-      pathname: "/game",
+      pathname: "/round",
       params: {
-        players: String(totalPlayers),
-        impostors: String(impostorsN),
-        names: JSON.stringify(partyNames),
+        order: JSON.stringify(order),
+        i: "0",
+        impostorIndices: JSON.stringify(impostorIndices),
+        word,
       },
     });
   };
@@ -188,18 +229,20 @@ export default function NamesScreen() {
     <View style={styles.screen}>
       <View style={{ height: SPACE_TOP }} />
 
-      {/* TITLE */}
-      <ImageBackground
-        source={labelNamesUp}
-        resizeMode="contain"
-        style={{ width: titleW, height: titleH, alignSelf: "center" }}
-      >
-        <View style={styles.titleInner}>
-          <Text style={[styles.titleText, { fontSize: labelFont }]}>
-            {t("names_title")}
-          </Text>
-        </View>
-      </ImageBackground>
+      {/* ✅ TITLE (con offset manual SOLO para este cartel) */}
+      <View style={{ transform: [{ translateY: NAMES_BANNER_OFFSET_Y }] }}>
+        <ImageBackground
+          source={labelNamesUp}
+          resizeMode="contain"
+          style={{ width: titleW, height: titleH, alignSelf: "center" }}
+        >
+          <View style={styles.titleInner}>
+            <Text style={[styles.titleText, { fontSize: titleFont }]}>
+              {t("names_title")}
+            </Text>
+          </View>
+        </ImageBackground>
+      </View>
 
       <View style={{ height: SPACE_AFTER_TITLE }} />
 
@@ -210,15 +253,14 @@ export default function NamesScreen() {
         countText={countText}
         active={mode}
         onChange={setMode}
-        fontSize={toggleFont}
-        // ✅ para que ToggleBar ponga “memory” traducido (si ya lo soporta)
-        // si tu ToggleBar todavía no recibe esto, te digo abajo el cambio que falta.
+        countFontSize={countFontSize}
+        memoryFontSize={memoryFontSize}
         memoryText={t("names_memory")}
       />
 
       <View style={{ height: GAP_AFTER_TOGGLE }} />
 
-      {/* ADD NEW (arriba del panel, con overlap). Slot siempre existe para no mover el panel */}
+      {/* ADD NEW */}
       <View
         style={[
           styles.addNewSlot,
@@ -236,7 +278,7 @@ export default function NamesScreen() {
             text={t("names_addNew")}
             width={addNewW}
             height={addNewH}
-            fontSize={Math.max(18, Math.round(contentW * 0.075))}
+            fontSize={addNewFont}
             onPress={onPressAddNew}
             contentUp={{ top: 10, bottom: 18, left: 16, right: 16 }}
             contentDown={{ top: 16, bottom: 12, left: 16, right: 16 }}
@@ -244,7 +286,7 @@ export default function NamesScreen() {
         )}
       </View>
 
-      {/* PANEL (✅ ahora la lista es scrolleable dentro del rectángulo gris) */}
+      {/* PANEL */}
       <View style={[styles.panelWrap, { width: contentW }]}>
         <ImageBackground source={listPanelUp} resizeMode="stretch" style={styles.panelBg}>
           <View style={styles.listArea}>
@@ -255,12 +297,14 @@ export default function NamesScreen() {
               bounces={false}
             >
               {listToShow.length === 0 ? (
-                <Text style={[styles.emptyText, { fontSize: listNameFont }]}>
+                <Text style={[styles.emptyText, { fontSize: emptyFont }]}>
                   {memoryMode ? t("names_empty_memory") : t("names_empty_party")}
                 </Text>
               ) : (
                 listToShow.map((name) => {
-                  const inParty = partyNames.some((x) => x.toLowerCase() === name.toLowerCase());
+                  const inParty = partyNames.some(
+                    (x) => x.toLowerCase() === name.toLowerCase()
+                  );
 
                   return (
                     <View key={name} style={styles.listRow}>
@@ -270,10 +314,7 @@ export default function NamesScreen() {
                         }}
                         style={{ flex: 1 }}
                       >
-                        <Text
-                          style={[styles.nameText, { fontSize: listNameFont }]}
-                          numberOfLines={1}
-                        >
+                        <Text style={[styles.nameText, { fontSize: listNameFont }]} numberOfLines={1}>
                           {name}
                         </Text>
                       </Pressable>
@@ -327,28 +368,36 @@ export default function NamesScreen() {
       <Modal transparent visible={modalOpen} animationType="fade">
         <View style={styles.modalBack}>
           <View style={styles.modalCard}>
-            <Text style={styles.modalTitle}>{t("names_modal_title")}</Text>
+            <Text style={[styles.modalTitle, { fontSize: modalTitleFont }]}>
+              {t("names_modal_title")}
+            </Text>
 
             <TextInput
               value={newName}
               onChangeText={setNewName}
               placeholder={t("names_modal_placeholder")}
               placeholderTextColor="#666"
-              style={styles.input}
+              style={[styles.input, { fontSize: modalInputFont }]}
               autoFocus
             />
 
             <View style={styles.modalRow}>
               <Pressable onPress={() => setModalOpen(false)} style={styles.modalBtn}>
-                <Text style={styles.modalBtnText}>{t("names_modal_cancel")}</Text>
+                <Text style={[styles.modalBtnText, { fontSize: modalBtnFont }]}>
+                  {t("names_modal_cancel")}
+                </Text>
               </Pressable>
 
               <Pressable onPress={confirmAddNew} style={styles.modalBtn}>
-                <Text style={styles.modalBtnText}>{t("names_modal_add")}</Text>
+                <Text style={[styles.modalBtnText, { fontSize: modalBtnFont }]}>
+                  {t("names_modal_add")}
+                </Text>
               </Pressable>
             </View>
 
-            <Text style={styles.modalHint}>{t("names_hint_remove")}</Text>
+            <Text style={[styles.modalHint, { fontSize: modalHintFont }]}>
+              {t("names_modal_hint")}
+            </Text>
           </View>
         </View>
       </Modal>
@@ -387,8 +436,7 @@ const styles = StyleSheet.create({
   panelWrap: {
     flex: 1,
     alignSelf: "center",
-    minHeight: 320, // 👈 AJUSTE MANUAL (alto mínimo)
-    // height: 420,  // 👈 si quieres alto FIJO, descomenta
+    minHeight: 320,
     zIndex: 1,
     elevation: 1,
   },
@@ -441,7 +489,6 @@ const styles = StyleSheet.create({
   modalTitle: {
     fontFamily: "PressStart2P",
     color: "#111",
-    fontSize: 14,
     marginBottom: 12,
     includeFontPadding: false,
   },
@@ -452,7 +499,6 @@ const styles = StyleSheet.create({
     paddingVertical: 10,
     fontFamily: "PressStart2P",
     color: "#111",
-    fontSize: 14,
     includeFontPadding: false,
     backgroundColor: "#FFF",
   },
@@ -471,13 +517,11 @@ const styles = StyleSheet.create({
   modalBtnText: {
     fontFamily: "PressStart2P",
     color: "#111",
-    fontSize: 12,
     includeFontPadding: false,
   },
   modalHint: {
     fontFamily: "PressStart2P",
     color: "#444",
-    fontSize: 10,
     marginTop: 12,
     includeFontPadding: false,
   },

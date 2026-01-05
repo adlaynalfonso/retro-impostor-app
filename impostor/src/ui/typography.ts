@@ -12,6 +12,7 @@ export type FontToken =
   | "home_settings"
 
   // Language screen
+  | "language_title"
   | "language_option"
 
   // Setup (players screen)
@@ -44,6 +45,7 @@ const fontSizes: Record<Lang, Record<FontToken, number>> = {
     home_settings: 36,
 
     // LANGUAGE
+    language_title: 34,
     language_option: 34,
 
     // SETUP
@@ -55,18 +57,18 @@ const fontSizes: Record<Lang, Record<FontToken, number>> = {
     settings_title: 36,
 
     // ===== NAMES =====
-    names_title: 34,        // "NAMES"
-    names_addNew: 28,       // "ADD NEW"
-    names_memory: 26,       // "MEMORY"
-    names_counter: 28,      // "0/10"
-    names_list: 26,         // nombres dentro del panel
-    names_empty: 26,        // "NO NAMES YET"
+    names_title: 34, // "NAMES"
+    names_addNew: 28, // "ADD NEW"
+    names_memory: 26, // "MEMORY"
+    names_counter: 28, // "0/10"
+    names_list: 26, // nombres dentro del panel
+    names_empty: 26, // "NO NAMES YET"
 
     // MODAL
-    names_modal_title: 16,  // "NEW NAME"
-    names_modal_input: 14,  // input text
+    names_modal_title: 16, // "NEW NAME"
+    names_modal_input: 14, // input text
     names_modal_button: 12, // ADD / CANCEL
-    names_modal_hint: 10,   // tip inferior
+    names_modal_hint: 10, // tip inferior
   },
 
   es: {
@@ -76,6 +78,7 @@ const fontSizes: Record<Lang, Record<FontToken, number>> = {
     home_settings: 34,
 
     // LANGUAGE
+    language_title: 34,
     language_option: 38,
 
     // SETUP
@@ -87,12 +90,12 @@ const fontSizes: Record<Lang, Record<FontToken, number>> = {
     settings_title: 34,
 
     // ===== NAMES =====
-    names_title: 32,        // "NOMBRES"
-    names_addNew: 24,       // "AGREGAR"
-    names_memory: 12,       // "MEMORIA"
-    names_counter: 26,      // "0/10"
-    names_list: 24,         // nombres suelen ser más largos en ES
-    names_empty: 24,        // "AÚN NO HAY NOMBRES"
+    names_title: 32, // "NOMBRES"
+    names_addNew: 24, // "AGREGAR"
+    names_memory: 22, // "MEMORIA"
+    names_counter: 26, // "0/10"
+    names_list: 24, // nombres suelen ser más largos en ES
+    names_empty: 24, // "AÚN NO HAY NOMBRES"
 
     // MODAL
     names_modal_title: 15,
@@ -102,7 +105,18 @@ const fontSizes: Record<Lang, Record<FontToken, number>> = {
   },
 };
 
-/** Helper: devuelve el size según idioma */
+/**
+ * Helper: devuelve el size según idioma.
+ * Tiene fallback a "en" + warning si falta el token.
+ */
 export function fs(lang: Lang, token: FontToken) {
-  return fontSizes[lang][token];
+  const byLang = fontSizes[lang];
+  const byEn = fontSizes.en;
+
+  const value = byLang?.[token] ?? byEn[token];
+  if (value == null) {
+    console.warn(`[typography] Missing font token "${token}" for lang "${lang}"`);
+    return 14;
+  }
+  return value;
 }

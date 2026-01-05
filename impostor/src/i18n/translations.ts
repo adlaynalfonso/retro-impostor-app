@@ -1,3 +1,4 @@
+// impostor/src/i18n/translations.ts
 export type Lang = "en" | "es";
 
 export const translations = {
@@ -33,13 +34,26 @@ export const translations = {
     names_modal_cancel: "CANCEL",
     names_modal_add: "ADD",
 
-    // ✅ NUEVO (para usar el hint del modal directo con t())
+    // HINT (usar en modal y/o pantalla)
     names_modal_hint: "TIP: TAP A NAME TO REMOVE IT (ONLY IN NORMAL MODE).",
 
-    // NAMES ALERTS / HINTS
+    // NAMES ALERTS
     names_alert_missing_title: "MISSING NAMES",
     names_alert_missing_body: "YOU NEED {n} NAMES TO CONTINUE.",
-    names_hint_remove: "TIP: TAP A NAME TO REMOVE IT (ONLY IN NORMAL MODE).",
+
+    // ROUND
+    round_im: "I AM",
+
+    // REVEAL
+    reveal_hint: "HOLD THE BUTTON\nTO REVEAL THE WORD",
+    reveal_press: "PRESS",
+    reveal_impostor: "IMPOSTOR",
+
+    // SHOW
+    show_title: "RESULT",
+    show_impostors: "IMPOSTOR(S):",
+    show_word: "WORD:",
+    show_home: "HOME",
   },
 
   es: {
@@ -74,13 +88,26 @@ export const translations = {
     names_modal_cancel: "CANCELAR",
     names_modal_add: "AGREGAR",
 
-    // ✅ NUEVO (para usar el hint del modal directo con t())
+    // HINT (usar en modal y/o pantalla)
     names_modal_hint: "TIP: TOCA UN NOMBRE PARA ELIMINARLO (SOLO EN MODO NORMAL).",
 
-    // NAMES ALERTS / HINTS
+    // NAMES ALERTS
     names_alert_missing_title: "FALTAN NOMBRES",
     names_alert_missing_body: "NECESITAS {n} NOMBRES PARA CONTINUAR.",
-    names_hint_remove: "TIP: TOCA UN NOMBRE PARA ELIMINARLO (SOLO EN MODO NORMAL).",
+
+    // ROUND
+    round_im: "SI SOY",
+
+    // REVEAL
+    reveal_hint: "DEJA EL BOTÓN PRESIONADO\nPARA REVELAR LA PALABRA",
+    reveal_press: "PRESIONA",
+    reveal_impostor: "IMPOSTOR",
+
+    // SHOW
+    show_title: "RESULTADO",
+    show_impostors: "IMPOSTOR(ES):",
+    show_word: "PALABRA:",
+    show_home: "INICIO",
   },
 } as const;
 
