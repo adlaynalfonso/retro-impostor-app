@@ -14,6 +14,7 @@ import {
 } from "react-native";
 import { router, useLocalSearchParams } from "expo-router";
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import { Swipeable } from "react-native-gesture-handler";
 
 import PixelButton from "../../components/PixelButton";
 import { useLanguage } from "../../i18n/LanguageProvider";
@@ -162,6 +163,14 @@ export default function NamesScreen() {
     });
   };
 
+  const removeFromMemory = (name: string) => {
+    setSavedNames((prev) => {
+      const next = prev.filter((x) => x !== name);
+      AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(next)).catch(() => {});
+      return next;
+    });
+  };
+
   const addToParty = (name: string) => {
     const n = normalizeName(name);
     if (!n) return;
@@ -204,7 +213,7 @@ export default function NamesScreen() {
     }
 
     // ✅ Orden aleatorio de jugadores (sin tocar partyNames original)
-    const order = [...partyNames].sort(() => Math.random() - 0.5);
+    const order = [...partyNames].sort(() => Math.random() * 0.5 - 0.25);
 
     // ✅ Impostores únicos (nunca más que players)
     const impostorsCount = Math.max(1, Math.min(impostorsN, totalPlayers));
@@ -223,6 +232,70 @@ export default function NamesScreen() {
         word,
       },
     });
+  };
+
+  // ✅ Swipe action (barra roja estilo iPhone)
+  const renderRightActions = (name: string) => {
+    return (
+      <View style={styles.swipeRightWrap}>
+        <Pressable
+          onPress={() => removeFromMemory(name)}
+          style={styles.swipeDeleteBtn}
+        >
+          <Text style={styles.swipeDeleteText}>DELETE</Text>
+        </Pressable>
+      </View>
+    );
+  };
+
+  const renderRow = (name: string) => {
+    const inParty = partyNames.some((x) => x.toLowerCase() === name.toLowerCase());
+
+    const rowContent = (
+      <View style={styles.listRow}>
+        <Pressable
+          onPress={() => {
+            if (!memoryMode) removeFromParty(name);
+          }}
+          style={{ flex: 1 }}
+        >
+          <Text style={[styles.nameText, { fontSize: listNameFont }]} numberOfLines={1}>
+            {name}
+          </Text>
+        </Pressable>
+
+        {memoryMode && (
+          <View style={{ marginLeft: 10, opacity: inParty ? 0.45 : 1 }}>
+            <PixelButton
+              up={plusUp}
+              down={plusDown}
+              text=""
+              width={Math.round(contentW * 0.12)}
+              height={Math.round(contentW * 0.12)}
+              onPress={() => {
+                if (!inParty) addToParty(name);
+              }}
+              contentUp={{ top: 0, bottom: 0, left: 0, right: 0 }}
+              contentDown={{ top: 0, bottom: 0, left: 0, right: 0 }}
+            />
+          </View>
+        )}
+      </View>
+    );
+
+    // ✅ Solo swipe delete en "memory"
+    if (!memoryMode) return <View key={name}>{rowContent}</View>;
+
+    return (
+      <Swipeable
+        key={name}
+        renderRightActions={() => renderRightActions(name)}
+        rightThreshold={40}
+        overshootRight={false}
+      >
+        {rowContent}
+      </Swipeable>
+    );
   };
 
   return (
@@ -301,43 +374,7 @@ export default function NamesScreen() {
                   {memoryMode ? t("names_empty_memory") : t("names_empty_party")}
                 </Text>
               ) : (
-                listToShow.map((name) => {
-                  const inParty = partyNames.some(
-                    (x) => x.toLowerCase() === name.toLowerCase()
-                  );
-
-                  return (
-                    <View key={name} style={styles.listRow}>
-                      <Pressable
-                        onPress={() => {
-                          if (!memoryMode) removeFromParty(name);
-                        }}
-                        style={{ flex: 1 }}
-                      >
-                        <Text style={[styles.nameText, { fontSize: listNameFont }]} numberOfLines={1}>
-                          {name}
-                        </Text>
-                      </Pressable>
-
-                      {memoryMode && (
-                        <View style={{ marginLeft: 10, opacity: inParty ? 0.45 : 1 }}>
-                          <PixelButton
-                            up={plusUp}
-                            down={plusDown}
-                            text=""
-                            width={Math.round(contentW * 0.12)}
-                            height={Math.round(contentW * 0.12)}
-                            onPress={() => {
-                              if (!inParty) addToParty(name);
-                            }}
-                            contentUp={{ top: 0, bottom: 0, left: 0, right: 0 }}
-                            contentDown={{ top: 0, bottom: 0, left: 0, right: 0 }}
-                          />
-                        </View>
-                      )}
-                    </View>
-                  );
-                })
+                listToShow.map(renderRow)
               )}
             </ScrollView>
           </View>
@@ -408,7 +445,7 @@ export default function NamesScreen() {
 const styles = StyleSheet.create({
   screen: {
     flex: 1,
-    backgroundColor: "#C8A35A",
+    backgroundColor: "#96a3beff",
     alignItems: "center",
   },
 
@@ -458,6 +495,7 @@ const styles = StyleSheet.create({
     paddingVertical: 10,
     borderBottomWidth: 2,
     borderBottomColor: "rgba(0,0,0,0.15)",
+    backgroundColor: "transparent",
   },
   nameText: {
     fontFamily: "PressStart2P",
@@ -469,6 +507,27 @@ const styles = StyleSheet.create({
     color: "#333",
     includeFontPadding: false,
     marginTop: 12,
+  },
+
+  // ✅ Swipe delete (barra roja estilo iPhone)
+  swipeRightWrap: {
+    justifyContent: "center",
+    alignItems: "flex-end",
+    backgroundColor: "#E53935",
+    paddingRight: 14,
+    // altura automática según row
+  },
+  swipeDeleteBtn: {
+    minWidth: 110,
+    height: "100%",
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  swipeDeleteText: {
+    fontFamily: "PressStart2P",
+    color: "#fff",
+    fontSize: 14,
+    includeFontPadding: false,
   },
 
   modalBack: {

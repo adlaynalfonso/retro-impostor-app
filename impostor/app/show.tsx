@@ -1,27 +1,20 @@
 // impostor/app/show.tsx
-import React, { useMemo } from "react";
-import { View, Text, StyleSheet } from "react-native";
-import { router, useLocalSearchParams } from "expo-router";
+import React, { useEffect, useMemo } from "react";
+import { View, Text, StyleSheet, BackHandler, Image } from "react-native";
+import { router, useLocalSearchParams, useNavigation } from "expo-router";
 import PixelButton from "../src/components/PixelButton";
 import { useLanguage } from "../src/i18n/LanguageProvider";
+import { APP_BACKGROUND } from "../src/ui/colors";
 
-const homeUp = require("../assets/buttons/btn_primary_up.png");
-const homeDown = require("../assets/buttons/btn_primary_down.png");
+// ✅ TUS BOTONES (SIN TEXTO)
+const playAgainUp = require("../assets/ui/btn_play_again_up.png");
+const playAgainDown = require("../assets/ui/btn_play_again_down.png");
 
-function randomBgAvoid() {
-  const banned = new Set(["#DC2D2D", "#C5B9D2"]);
-  for (let tries = 0; tries < 60; tries++) {
-    const hue = Math.floor(Math.random() * 360);
-    const saturation = 70;
-    const lightness = 40 + Math.floor(Math.random() * 15);
-    const c = `hsl(${hue}, ${saturation}%, ${lightness}%)`;
-    if (!banned.has(c)) return c;
-  }
-  return "hsl(200, 70%, 45%)";
-}
+const homeIconUp = require("../assets/ui/btn_home_icon_up.png");
+const homeIconDown = require("../assets/ui/btn_home_icon_down.png");
 
+// Impostores random
 function pickUniqueIndices(count: number, max: number) {
-  // count <= max
   const set = new Set<number>();
   while (set.size < count) set.add(Math.floor(Math.random() * max));
   return Array.from(set);
@@ -29,6 +22,7 @@ function pickUniqueIndices(count: number, max: number) {
 
 export default function ShowScreen() {
   const { lang } = useLanguage();
+  const navigation = useNavigation();
 
   const params = useLocalSearchParams<{
     order?: string;
@@ -36,7 +30,12 @@ export default function ShowScreen() {
     word?: string;
   }>();
 
-  const bg = useMemo(() => randomBgAvoid(), []);
+  // ✅ Bloquear back (gesto iOS + botón Android)
+  useEffect(() => {
+    navigation.setOptions?.({ gestureEnabled: false });
+    const sub = BackHandler.addEventListener("hardwareBackPress", () => true);
+    return () => sub.remove();
+  }, [navigation]);
 
   const order = useMemo(() => {
     try {
@@ -58,30 +57,33 @@ export default function ShowScreen() {
   }, [params.impostorIndices]);
 
   const word = String(params.word ?? "PIZZA");
+  const impostorNames = impostorIndices.map((idx) => order[idx]).filter(Boolean);
 
-  const impostorNames = impostorIndices
-    .map((idx) => order[idx])
-    .filter(Boolean);
+  // ✅ Tamaños originales del PNG (NO ESCALA)
+  const playSize = Image.resolveAssetSource(playAgainUp);
+  const homeSize = Image.resolveAssetSource(homeIconUp);
 
-  const title = lang === "es" ? "RESULTADO" : "RESULT";
-  const impostorLabel = lang === "es" ? "IMPOSTOR:" : "IMPOSTOR:";
-  const wordLabel = lang === "es" ? "PALABRA:" : "WORD:";
+  const PLAY_W = playSize?.width ?? 360;
+  const PLAY_H = playSize?.height ?? 136;
 
-  const playAgainText = lang === "es" ? "JUGAR DE NUEVO" : "PLAY AGAIN";
-  const homeText = lang === "es" ? "INICIO" : "HOME";
+  const HOME_W = homeSize?.width ?? 240;
+  const HOME_H = homeSize?.height ?? 110;
+
+  // ✅ Controles manuales (solo para mover, NO para escalar)
+  const GAP_AFTER_TEXT = 18;
+  const GAP_BETWEEN_BTNS = 14;
+
+  // Si lo quieres un pelín más abajo/arriba todo el bloque:
+  const SCREEN_Y_OFFSET = 0; // + baja, - sube
 
   const goHome = () => router.replace("/");
 
   const playAgainSamePlayers = () => {
-    // ✅ mismos players (order). Nuevo reparto de impostores y nueva palabra:
-    // Para NO romperte el build si todavía estás moviendo words, lo hacemos “safe”.
     let newWord = word;
     try {
       // eslint-disable-next-line @typescript-eslint/no-var-requires
       const mod = require("../src/game/words");
-      if (mod?.getRandomWord) {
-        newWord = mod.getRandomWord(lang);
-      }
+      if (mod?.getRandomWord) newWord = mod.getRandomWord(lang);
     } catch {}
 
     const impostorCount = Math.max(1, Math.min(impostorIndices.length || 1, order.length));
@@ -99,46 +101,79 @@ export default function ShowScreen() {
   };
 
   return (
-    <View style={[styles.screen, { backgroundColor: bg }]}>
-      <Text style={styles.title}>{title}</Text>
+    <View style={[styles.screen, { backgroundColor: APP_BACKGROUND }]}>
+      <View
+  style={{
+    width: "100%",
+    alignItems: "center", // 👈 CLAVE
+    transform: [{ translateY: SCREEN_Y_OFFSET }],
+  }}
+>
+        {/* ✅ TEXTOS (estos sí “se ajustan” al ancho) */}
+        <Text
+          style={styles.title}
+          numberOfLines={1}
+          adjustsFontSizeToFit
+          minimumFontScale={0.65}
+        >
+          {lang === "es" ? "RESULTADO" : "RESULT"}
+        </Text>
 
-      <Text style={styles.line}>{impostorLabel}</Text>
-      <Text style={styles.big}>
-        {impostorNames.length ? impostorNames.join(", ") : "???"}
-      </Text>
+        <Text style={styles.label} numberOfLines={1}>
+          {lang === "es" ? "IMPOSTOR:" : "IMPOSTOR:"}
+        </Text>
 
-      <Text style={styles.line}>{wordLabel}</Text>
-      <Text style={styles.word}>{word}</Text>
+        <Text
+          style={styles.value}
+          numberOfLines={1}
+          adjustsFontSizeToFit
+          minimumFontScale={0.55}
+        >
+          {impostorNames.length ? impostorNames.join(", ") : "???"}
+        </Text>
 
-      {/* ✅ Botón grande: jugar de nuevo */}
-      <View style={{ marginTop: 18 }}>
+        <Text style={[styles.label, { marginTop: 10 }]} numberOfLines={1}>
+          {lang === "es" ? "PALABRA:" : "WORD:"}
+        </Text>
+
+        <Text
+          style={styles.word}
+          numberOfLines={1}
+          adjustsFontSizeToFit
+          minimumFontScale={0.55}
+        >
+          {word}
+        </Text>
+
+        <View style={{ height: GAP_AFTER_TEXT }} />
+
+        {/* ✅ BOTONES (tamaño ORIGINAL del PNG, sin texto) */}
         <PixelButton
-          up={homeUp}
-          down={homeDown}
-          text={playAgainText}
-          width={304}
-          height={136}
-          fontSize={26}
-          textColor="#ffffff"
+          up={playAgainUp}
+          down={playAgainDown}
+          text=""
+          width={PLAY_W}
+          height={PLAY_H}
+          fontSize={1}
+          textColor="transparent"
           onPress={playAgainSamePlayers}
-          contentUp={{ top: 24, bottom: 52, left: 18, right: 18 }}
-          contentDown={{ top: 39, bottom: 33, left: 18, right: 18 }}
+          contentUp={{ top: 0, bottom: 0, left: 0, right: 0 }}
+          contentDown={{ top: 0, bottom: 0, left: 0, right: 0 }}
         />
-      </View>
 
-      {/* ✅ Botón pequeño: inicio */}
-      <View style={{ marginTop: 12 }}>
+        <View style={{ height: GAP_BETWEEN_BTNS }} />
+
         <PixelButton
-          up={homeUp}
-          down={homeDown}
-          text={homeText}
-          width={230}
-          height={104}
-          fontSize={22}
-          textColor="#ffffff"
+          up={homeIconUp}
+          down={homeIconDown}
+          text=""
+          width={HOME_W}
+          height={HOME_H}
+          fontSize={1}
+          textColor="transparent"
           onPress={goHome}
-          contentUp={{ top: 18, bottom: 40, left: 18, right: 18 }}
-          contentDown={{ top: 30, bottom: 28, left: 18, right: 18 }}
+          contentUp={{ top: 0, bottom: 0, left: 0, right: 0 }}
+          contentDown={{ top: 0, bottom: 0, left: 0, right: 0 }}
         />
       </View>
     </View>
@@ -149,38 +184,57 @@ const styles = StyleSheet.create({
   screen: {
     flex: 1,
     alignItems: "center",
-    justifyContent: "center",
-    gap: 10,
+    justifyContent: "center", // ✅ centra todo
     paddingHorizontal: 18,
   },
+
+  // ✅ Para que el texto “se alargue” a lo ancho de pantalla
   title: {
     fontFamily: "PressStart2P",
     color: "#fff",
-    fontSize: 18,
+    fontSize: 26,
+    lineHeight: 30,
     includeFontPadding: false,
-    marginBottom: 14,
     textAlign: "center",
+    width: "100%",
+    maxWidth: 520,
+    paddingHorizontal: 14,
+    marginBottom: 10,
   },
-  line: {
+
+  label: {
     fontFamily: "PressStart2P",
-    color: "rgba(255,255,255,0.75)",
-    fontSize: 12,
+    color: "rgba(255,255,255,0.85)",
+    fontSize: 14,
+    lineHeight: 18,
     includeFontPadding: false,
+    textAlign: "center",
+    width: "100%",
+    maxWidth: 520,
+    paddingHorizontal: 14,
   },
-  big: {
+
+  value: {
     fontFamily: "PressStart2P",
     color: "#fff",
-    fontSize: 20,
+    fontSize: 34, // máximo (luego se reduce si hace falta)
+    lineHeight: 40,
     includeFontPadding: false,
-    marginBottom: 12,
     textAlign: "center",
+    width: "100%",
+    maxWidth: 520,
+    paddingHorizontal: 14,
   },
+
   word: {
     fontFamily: "PressStart2P",
     color: "#fff",
-    fontSize: 30,
+    fontSize: 44, // máximo (luego se reduce si hace falta)
+    lineHeight: 52,
     includeFontPadding: false,
-    marginBottom: 6,
     textAlign: "center",
+    width: "100%",
+    maxWidth: 520,
+    paddingHorizontal: 14,
   },
 });

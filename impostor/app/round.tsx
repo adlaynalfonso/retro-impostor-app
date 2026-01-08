@@ -1,35 +1,13 @@
+// impostor/app/round.tsx
 import React, { useEffect, useMemo } from "react";
 import { View, Text, StyleSheet, BackHandler } from "react-native";
 import { router, useLocalSearchParams, useNavigation } from "expo-router";
 import PixelButton from "../src/components/PixelButton";
 import { useLanguage } from "../src/i18n/LanguageProvider";
+import { APP_BACKGROUND } from "../src/ui/colors";
 
 const btnUp = require("../assets/buttons/btn_primary_up.png");
 const btnDown = require("../assets/buttons/btn_primary_down.png");
-
-/**
- * 🎨 Color estable durante TODA la ronda
- * Saturado, nunca blanco ni negro
- */
-function getRoundBackgroundColor() {
-  const hue = Math.floor(Math.random() * 360);
-  const saturation = 65;
-  const lightness = 35 + Math.floor(Math.random() * 20); // 35–55
-  return `hsl(${hue}, ${saturation}%, ${lightness}%)`;
-}
-
-/**
- * 🧠 Tamaño máximo del nombre según longitud
- */
-function getBestNameFontSize(name: string) {
-  const n = (name ?? "").trim().length;
-  if (n <= 4) return 72;
-  if (n <= 7) return 64;
-  if (n <= 10) return 56;
-  if (n <= 14) return 44;
-  if (n <= 18) return 36;
-  return 30;
-}
 
 export default function RoundScreen() {
   const { t } = useLanguage();
@@ -41,8 +19,6 @@ export default function RoundScreen() {
     impostorIndices?: string;
     word?: string;
   }>();
-
-  const backgroundColor = useMemo(() => getRoundBackgroundColor(), []);
 
   // 🚫 BLOQUEAR BACK (gesto + botón físico)
   useEffect(() => {
@@ -87,7 +63,6 @@ export default function RoundScreen() {
   }
 
   const playerName = order[i] ?? "";
-  const nameFontSize = getBestNameFontSize(playerName);
 
   const goImHere = () => {
     router.push({
@@ -101,33 +76,30 @@ export default function RoundScreen() {
     });
   };
 
-  // 🎯 CONTROL MANUAL DEL BOTÓN "SI SOY"
+  // 🎯 CONTROL MANUAL DEL BOTÓN
   const SI_SOY_OFFSET_Y = 150; // ⬇️ aumenta para bajarlo, negativo para subirlo
 
   return (
-    <View style={[styles.screen, { backgroundColor }]}>
-      <Text
-        style={[
-          styles.name,
-          {
-            fontSize: nameFontSize,
-            lineHeight: Math.round(nameFontSize * 1.15),
-          },
-        ]}
-        numberOfLines={2}
-        adjustsFontSizeToFit
-        minimumFontScale={0.6}
-      >
-        {playerName}
-      </Text>
+    <View style={[styles.screen, { backgroundColor: APP_BACKGROUND }]}>
+      {/* ✅ NOMBRE DENTRO DE RECUADRO (siempre 1 línea) */}
+      <View style={styles.nameBox}>
+        <Text
+          style={styles.name}
+          numberOfLines={1}
+          adjustsFontSizeToFit
+          minimumFontScale={0.45}
+        >
+          {playerName}
+        </Text>
+      </View>
 
-      {/* ⬇️ Botón movido manualmente (imagen + texto juntos) */}
+      {/* ✅ Botón “¡SI SOY!” */}
       <View style={{ transform: [{ translateY: SI_SOY_OFFSET_Y }] }}>
         <PixelButton
           up={btnUp}
           down={btnDown}
-          text={t("round_im")}
-          width={304}
+          text={`¡${t("round_im")}!`}
+          width={340}
           height={136}
           fontSize={38}
           textColor="#ffffff"
@@ -148,12 +120,26 @@ const styles = StyleSheet.create({
     paddingHorizontal: 18,
     gap: 28,
   },
+
+  // ✅ Recuadro del nombre
+  nameBox: {
+    backgroundColor: "#5D6B86",
+    paddingHorizontal: 20,
+    paddingVertical: 16,
+    width: "100%",
+    maxWidth: 420,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+
+  // ✅ Nombre: base grande, y se encoge automático hasta caber en 1 línea
   name: {
     fontFamily: "PressStart2P",
     color: "#fff",
     textAlign: "center",
     includeFontPadding: false,
     width: "100%",
-    maxWidth: 420,
+    fontSize: 64,
+    lineHeight: 64,
   },
 });

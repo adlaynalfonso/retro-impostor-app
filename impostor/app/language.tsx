@@ -48,7 +48,7 @@ export default function LanguageScreen() {
 const styles = StyleSheet.create({
   screen: {
     flex: 1,
-    backgroundColor: "#6E68A1",
+    backgroundColor: "#96a3beff",
     alignItems: "center",
     justifyContent: "center",
   },

@@ -1,9 +1,13 @@
+// app/_layout.tsx
+import "react-native-gesture-handler";
+
 import React, { useEffect, useMemo, useState } from "react";
 import { View } from "react-native";
 import { Stack } from "expo-router";
 import { useFonts } from "expo-font";
 import * as SplashScreen from "expo-splash-screen";
 import { Asset } from "expo-asset";
+import { GestureHandlerRootView } from "react-native-gesture-handler";
 
 import { LanguageProvider } from "../src/i18n/LanguageProvider";
 
@@ -18,22 +22,44 @@ export default function RootLayout() {
   const [assetsReady, setAssetsReady] = useState(false);
   const [appReady, setAppReady] = useState(false);
 
-  // Assets reales que usas
+  // ✅ Assets reales (según tu carpeta assets/ui)
   const assetsToPreload = useMemo(
     () => [
       // Botones primarios (HOME + LANGUAGE)
       require("../assets/buttons/btn_primary_up.png"),
       require("../assets/buttons/btn_primary_down.png"),
 
-      // Si estos existen, déjalos. Si no, bórralos.
+      // Flechas
       require("../assets/ui/arrow_left_up.png"),
       require("../assets/ui/arrow_left_down.png"),
       require("../assets/ui/arrow_right_up.png"),
       require("../assets/ui/arrow_right_down.png"),
+
+      // Botón NEXT (UI)
       require("../assets/ui/btn_next_up.png"),
       require("../assets/ui/btn_next_down.png"),
+
+      // Labels / boxes
       require("../assets/ui/label_box_up.png"),
+      require("../assets/ui/label_box_down.png"),
       require("../assets/ui/number_box_up.png"),
+      require("../assets/ui/number_box_down.png"),
+      require("../assets/ui/counter_box_up.png"),
+      require("../assets/ui/counter_box_down.png"),
+
+      // ===== Names screen (evita pestañeo) =====
+      require("../assets/ui/label_names_up.png"),
+      require("../assets/ui/list_panel_up.png"),
+      require("../assets/ui/btn_add_new_up.png"),
+      require("../assets/ui/btn_add_new_down.png"),
+      require("../assets/ui/btn_plus_up.png"),
+      require("../assets/ui/btn_plus_down.png"),
+      require("../assets/ui/btn_memory_up.png"),
+      require("../assets/ui/btn_memory_down.png"),
+
+      // Botón rojo (reveal)
+      require("../assets/ui/red_btn_up.png"),
+      require("../assets/ui/red_btn_down.png"),
     ],
     []
   );
@@ -48,17 +74,14 @@ export default function RootLayout() {
         await Promise.all(
           assetsToPreload.map((m) => Asset.fromModule(m).downloadAsync())
         );
-      } catch (e) {
+      } catch {
         // No bloqueamos la app si falla algo
       } finally {
-        if (!cancelled) {
-          setAssetsReady(true);
-        }
+        if (!cancelled) setAssetsReady(true);
       }
     }
 
     prepare();
-
     return () => {
       cancelled = true;
     };
@@ -81,14 +104,16 @@ export default function RootLayout() {
   }
 
   return (
-    <LanguageProvider>
-      <Stack
-        screenOptions={{
-          headerShown: false,
-          animation: "none", // corte seco retro
-          contentStyle: { backgroundColor: "#000" },
-        }}
-      />
-    </LanguageProvider>
+    <GestureHandlerRootView style={{ flex: 1 }}>
+      <LanguageProvider>
+        <Stack
+          screenOptions={{
+            headerShown: false,
+            animation: "none", // corte seco retro
+            contentStyle: { backgroundColor: "#000" },
+          }}
+        />
+      </LanguageProvider>
+    </GestureHandlerRootView>
   );
 }
